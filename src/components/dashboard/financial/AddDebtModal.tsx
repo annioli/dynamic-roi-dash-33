@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -42,33 +42,30 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
     description: '',
   });
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: '',
+        amount: '',
+        dueDate: '',
+        category: '',
+        description: '',
+      });
+    }
+  }, [open]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     console.log('Form data submitted:', formData);
     
-    // Validação dos campos obrigatórios
-    if (!formData.name.trim()) {
-      console.log('Nome da dívida é obrigatório');
-      return;
-    }
-    
-    if (!formData.amount.trim()) {
-      console.log('Valor é obrigatório');
-      return;
-    }
-    
-    if (!formData.dueDate.trim()) {
-      console.log('Data de vencimento é obrigatória');
-      return;
-    }
-    
-    if (!formData.category.trim()) {
-      console.log('Categoria é obrigatória');
+    // Validação básica
+    if (!formData.name.trim() || !formData.amount.trim() || !formData.dueDate.trim() || !formData.category.trim()) {
+      console.log('Campos obrigatórios não preenchidos');
       return;
     }
 
-    // Conversão do valor para número
     const amount = parseFloat(formData.amount);
     console.log('Amount parsed:', amount, 'from:', formData.amount);
     
@@ -110,14 +107,6 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
         console.log('Variable debt added successfully');
       }
       
-      // Reset form and close modal
-      setFormData({
-        name: '',
-        amount: '',
-        dueDate: '',
-        category: '',
-        description: '',
-      });
       console.log('Form reset and modal closing');
       onClose();
     } catch (error) {

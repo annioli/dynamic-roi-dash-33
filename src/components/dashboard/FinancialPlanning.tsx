@@ -7,6 +7,7 @@ import { useFinancialPlanning } from '@/hooks/useFinancialPlanning';
 import { CashBalanceCard } from './financial/CashBalanceCard';
 import { FixedDebtsCard } from './financial/FixedDebtsCard';
 import { VariableDebtsCard } from './financial/VariableDebtsCard';
+import { FinancialHistoryCard } from './financial/FinancialHistoryCard';
 import { AddDebtModal } from './financial/AddDebtModal';
 import { 
   Wallet, 
@@ -103,7 +104,7 @@ export const FinancialPlanning: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-400">{formatCurrency(data.totalFixedDebts)}</div>
-            <p className="text-xs text-slate-400">{data.fixedDebts.length} dívidas mensais</p>
+            <p className="text-xs text-slate-400">{data.fixedDebts.filter(d => !d.isPaid).length} dívidas mensais</p>
           </CardContent>
         </Card>
 
@@ -114,7 +115,7 @@ export const FinancialPlanning: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-400">{formatCurrency(data.totalVariableDebts)}</div>
-            <p className="text-xs text-slate-400">{data.variableDebts.length} dívidas pontuais</p>
+            <p className="text-xs text-slate-400">{data.variableDebts.filter(d => !d.isPaid).length} dívidas pontuais</p>
           </CardContent>
         </Card>
 
@@ -137,10 +138,11 @@ export const FinancialPlanning: React.FC = () => {
       </div>
 
       {/* Financial Management Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
         <CashBalanceCard />
         <FixedDebtsCard />
         <VariableDebtsCard />
+        <FinancialHistoryCard />
       </div>
 
       {/* Add Debt Modal */}

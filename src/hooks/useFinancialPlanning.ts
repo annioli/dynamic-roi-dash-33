@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 
 export interface FixedDebt {
@@ -20,6 +21,15 @@ export interface VariableDebt {
   description?: string;
 }
 
+export interface HistoryEntry {
+  id: string;
+  date: string;
+  type: 'cash_update' | 'debt_added' | 'debt_paid' | 'debt_removed';
+  description: string;
+  amount: number;
+  category?: string;
+}
+
 export interface FinancialData {
   cashBalance: number;
   fixedDebts: FixedDebt[];
@@ -27,6 +37,7 @@ export interface FinancialData {
   totalFixedDebts: number;
   totalVariableDebts: number;
   availableBalance: number;
+  history: HistoryEntry[];
 }
 
 const STORAGE_KEY = 'financial-planning-data';
@@ -39,6 +50,7 @@ export const useFinancialPlanning = () => {
     totalFixedDebts: 0,
     totalVariableDebts: 0,
     availableBalance: 0,
+    history: [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -51,6 +63,10 @@ export const useFinancialPlanning = () => {
       console.log('Loading saved data:', savedData);
       if (savedData) {
         const parsedData = JSON.parse(savedData);
+        // Garantir que history existe
+        if (!parsedData.history) {
+          parsedData.history = [];
+        }
         console.log('Parsed data:', parsedData);
         setData(parsedData);
       }
@@ -70,6 +86,24 @@ export const useFinancialPlanning = () => {
       console.error('Error saving financial data:', err);
       setError('Erro ao salvar dados');
     }
+  }, []);
+
+  // Add history entry
+  const addHistoryEntry = useCallback((
+    type: HistoryEntry['type'],
+    description: string,
+    amount: number,
+    category?: string
+  ) => {
+    const entry: HistoryEntry = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      type,
+      description,
+      amount,
+      category,
+    };
+    return entry;
   }, []);
 
   // Calculate totals and available balance
@@ -99,10 +133,17 @@ export const useFinancialPlanning = () => {
     setLoading(true);
     try {
       const totals = calculateTotals(amount, data.fixedDebts, data.variableDebts);
+      const historyEntry = addHistoryEntry(
+        'cash_update',
+        `Saldo atualizado para ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount)}`,
+        amount
+      );
+      
       const newData = {
         ...data,
         cashBalance: amount,
         ...totals,
+        history: [historyEntry, ...data.history].slice(0, 100), // Manter apenas os últimos 100 registros
       };
       console.log('New data after cash balance update:', newData);
       setData(newData);
@@ -113,7 +154,7 @@ export const useFinancialPlanning = () => {
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData]);
+  }, [data, calculateTotals, saveData, addHistoryEntry]);
 
   // Add fixed debt
   const addFixedDebt = useCallback(async (debt: Omit<FixedDebt, 'id'>) => {
@@ -130,11 +171,18 @@ export const useFinancialPlanning = () => {
       console.log('Updated fixed debts array:', newFixedDebts);
       
       const totals = calculateTotals(data.cashBalance, newFixedDebts, data.variableDebts);
+      const historyEntry = addHistoryEntry(
+        'debt_added',
+        `Dívida fixa adicionada: ${debt.name}`,
+        -debt.amount,
+        debt.category
+      );
       
       const newData = {
         ...data,
         fixedDebts: newFixedDebts,
         ...totals,
+        history: [historyEntry, ...data.history].slice(0, 100),
       };
       console.log('Final data after adding fixed debt:', newData);
       
@@ -147,7 +195,7 @@ export const useFinancialPlanning = () => {
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData]);
+  }, [data, calculateTotals, saveData, addHistoryEntry]);
 
   // Add variable debt
   const addVariableDebt = useCallback(async (debt: Omit<VariableDebt, 'id'>) => {
@@ -164,11 +212,18 @@ export const useFinancialPlanning = () => {
       console.log('Updated variable debts array:', newVariableDebts);
       
       const totals = calculateTotals(data.cashBalance, data.fixedDebts, newVariableDebts);
+      const historyEntry = addHistoryEntry(
+        'debt_added',
+        `Dívida adicionada: ${debt.name}`,
+        -debt.amount,
+        debt.category
+      );
       
       const newData = {
         ...data,
         variableDebts: newVariableDebts,
         ...totals,
+        history: [historyEntry, ...data.history].slice(0, 100),
       };
       console.log('Final data after adding variable debt:', newData);
       
@@ -181,26 +236,52 @@ export const useFinancialPlanning = () => {
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData]);
+  }, [data, calculateTotals, saveData, addHistoryEntry]);
 
   // Toggle debt payment status
   const toggleDebtPayment = useCallback(async (debtId: string, type: 'fixed' | 'variable') => {
     setLoading(true);
     try {
       let newData = { ...data };
+      let debtName = '';
+      let debtAmount = 0;
       
       if (type === 'fixed') {
+        const debt = data.fixedDebts.find(d => d.id === debtId);
+        if (debt) {
+          debtName = debt.name;
+          debtAmount = debt.amount;
+        }
         newData.fixedDebts = data.fixedDebts.map(debt =>
           debt.id === debtId ? { ...debt, isPaid: !debt.isPaid } : debt
         );
       } else {
+        const debt = data.variableDebts.find(d => d.id === debtId);
+        if (debt) {
+          debtName = debt.name;
+          debtAmount = debt.amount;
+        }
         newData.variableDebts = data.variableDebts.map(debt =>
           debt.id === debtId ? { ...debt, isPaid: !debt.isPaid } : debt
         );
       }
 
       const totals = calculateTotals(newData.cashBalance, newData.fixedDebts, newData.variableDebts);
-      newData = { ...newData, ...totals };
+      const isPaying = type === 'fixed' 
+        ? newData.fixedDebts.find(d => d.id === debtId)?.isPaid
+        : newData.variableDebts.find(d => d.id === debtId)?.isPaid;
+      
+      const historyEntry = addHistoryEntry(
+        'debt_paid',
+        `${isPaying ? 'Pagamento' : 'Cancelamento do pagamento'} da dívida: ${debtName}`,
+        isPaying ? debtAmount : -debtAmount
+      );
+      
+      newData = { 
+        ...newData, 
+        ...totals,
+        history: [historyEntry, ...data.history].slice(0, 100),
+      };
       
       setData(newData);
       saveData(newData);
@@ -209,22 +290,37 @@ export const useFinancialPlanning = () => {
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData]);
+  }, [data, calculateTotals, saveData, addHistoryEntry]);
 
   // Remove debt
   const removeDebt = useCallback(async (debtId: string, type: 'fixed' | 'variable') => {
     setLoading(true);
     try {
       let newData = { ...data };
+      let debtName = '';
       
       if (type === 'fixed') {
+        const debt = data.fixedDebts.find(d => d.id === debtId);
+        if (debt) debtName = debt.name;
         newData.fixedDebts = data.fixedDebts.filter(debt => debt.id !== debtId);
       } else {
+        const debt = data.variableDebts.find(d => d.id === debtId);
+        if (debt) debtName = debt.name;
         newData.variableDebts = data.variableDebts.filter(debt => debt.id !== debtId);
       }
 
       const totals = calculateTotals(newData.cashBalance, newData.fixedDebts, newData.variableDebts);
-      newData = { ...newData, ...totals };
+      const historyEntry = addHistoryEntry(
+        'debt_removed',
+        `Dívida removida: ${debtName}`,
+        0
+      );
+      
+      newData = { 
+        ...newData, 
+        ...totals,
+        history: [historyEntry, ...data.history].slice(0, 100),
+      };
       
       setData(newData);
       saveData(newData);
@@ -233,7 +329,7 @@ export const useFinancialPlanning = () => {
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData]);
+  }, [data, calculateTotals, saveData, addHistoryEntry]);
 
   return {
     data,
