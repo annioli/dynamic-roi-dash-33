@@ -77,7 +77,7 @@ export const useFinancialPlanning = () => {
   }, []);
 
   // Save data to localStorage
-  const saveData = useCallback((newData: FinancialData) => {
+  const saveDataToStorage = useCallback((newData: FinancialData) => {
     try {
       console.log('Saving data to localStorage:', newData);
       localStorage.setItem(`${STORAGE_KEY}-admin`, JSON.stringify(newData));
@@ -147,14 +147,14 @@ export const useFinancialPlanning = () => {
       };
       console.log('New data after cash balance update:', newData);
       setData(newData);
-      saveData(newData);
+      saveDataToStorage(newData);
     } catch (err) {
       console.error('Error updating cash balance:', err);
       setError('Erro ao atualizar saldo');
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData, addHistoryEntry]);
+  }, [data, calculateTotals, saveDataToStorage, addHistoryEntry]);
 
   // Add fixed debt
   const addFixedDebt = useCallback(async (debt: Omit<FixedDebt, 'id'>) => {
@@ -187,7 +187,7 @@ export const useFinancialPlanning = () => {
       console.log('Final data after adding fixed debt:', newData);
       
       setData(newData);
-      saveData(newData);
+      saveDataToStorage(newData);
       console.log('Fixed debt added successfully');
     } catch (err) {
       console.error('Error adding fixed debt:', err);
@@ -195,7 +195,7 @@ export const useFinancialPlanning = () => {
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData, addHistoryEntry]);
+  }, [data, calculateTotals, saveDataToStorage, addHistoryEntry]);
 
   // Add variable debt
   const addVariableDebt = useCallback(async (debt: Omit<VariableDebt, 'id'>) => {
@@ -228,7 +228,7 @@ export const useFinancialPlanning = () => {
       console.log('Final data after adding variable debt:', newData);
       
       setData(newData);
-      saveData(newData);
+      saveDataToStorage(newData);
       console.log('Variable debt added successfully');
     } catch (err) {
       console.error('Error adding variable debt:', err);
@@ -236,7 +236,7 @@ export const useFinancialPlanning = () => {
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData, addHistoryEntry]);
+  }, [data, calculateTotals, saveDataToStorage, addHistoryEntry]);
 
   // Toggle debt payment status
   const toggleDebtPayment = useCallback(async (debtId: string, type: 'fixed' | 'variable') => {
@@ -284,13 +284,13 @@ export const useFinancialPlanning = () => {
       };
       
       setData(newData);
-      saveData(newData);
+      saveDataToStorage(newData);
     } catch (err) {
       setError('Erro ao atualizar status da dívida');
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData, addHistoryEntry]);
+  }, [data, calculateTotals, saveDataToStorage, addHistoryEntry]);
 
   // Remove debt
   const removeDebt = useCallback(async (debtId: string, type: 'fixed' | 'variable') => {
@@ -323,13 +323,13 @@ export const useFinancialPlanning = () => {
       };
       
       setData(newData);
-      saveData(newData);
+      saveDataToStorage(newData);
     } catch (err) {
       setError('Erro ao remover dívida');
     } finally {
       setLoading(false);
     }
-  }, [data, calculateTotals, saveData, addHistoryEntry]);
+  }, [data, calculateTotals, saveDataToStorage, addHistoryEntry]);
 
   return {
     data,
@@ -340,6 +340,7 @@ export const useFinancialPlanning = () => {
     addVariableDebt,
     toggleDebtPayment,
     removeDebt,
+    saveData: saveDataToStorage,
     clearError: () => setError(null),
   };
 };
