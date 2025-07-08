@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { BarChart3, FileText, CheckSquare, Webhook, LogOut } from 'lucide-react';
+import { BarChart3, FileText, CheckSquare, Webhook, TrendingUp, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const TopNavigation = () => {
@@ -54,6 +54,18 @@ const TopNavigation = () => {
             >
               <CheckSquare className="h-4 w-4" />
               <span className="font-medium">Tarefas</span>
+            </Link>
+
+            <Link 
+              to="/planejamento" 
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                isActive('/planejamento') 
+                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' 
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="font-medium">Planejamento</span>
             </Link>
 
             <Link 
