@@ -45,33 +45,72 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const amount = parseFloat(formData.amount.replace(/[^\d,-]/g, '').replace(',', '.'));
-    if (isNaN(amount) || amount <= 0) return;
+    console.log('Form data submitted:', formData);
+    
+    // Validação dos campos obrigatórios
+    if (!formData.name.trim()) {
+      console.log('Nome da dívida é obrigatório');
+      return;
+    }
+    
+    if (!formData.amount.trim()) {
+      console.log('Valor é obrigatório');
+      return;
+    }
+    
+    if (!formData.dueDate.trim()) {
+      console.log('Data de vencimento é obrigatória');
+      return;
+    }
+    
+    if (!formData.category.trim()) {
+      console.log('Categoria é obrigatória');
+      return;
+    }
+
+    // Conversão do valor para número
+    const amount = parseFloat(formData.amount);
+    console.log('Amount parsed:', amount, 'from:', formData.amount);
+    
+    if (isNaN(amount) || amount <= 0) {
+      console.log('Valor inválido:', amount);
+      return;
+    }
 
     try {
       if (type === 'fixed') {
         const dueDate = parseInt(formData.dueDate);
-        if (dueDate < 1 || dueDate > 31) return;
+        console.log('Due date parsed for fixed debt:', dueDate);
         
+        if (dueDate < 1 || dueDate > 31) {
+          console.log('Dia do vencimento deve estar entre 1 e 31');
+          return;
+        }
+        
+        console.log('Adding fixed debt...');
         await addFixedDebt({
-          name: formData.name,
+          name: formData.name.trim(),
           amount,
           dueDate,
           category: formData.category,
-          description: formData.description,
+          description: formData.description.trim(),
           isPaid: false,
         });
+        console.log('Fixed debt added successfully');
       } else {
+        console.log('Adding variable debt...');
         await addVariableDebt({
-          name: formData.name,
+          name: formData.name.trim(),
           amount,
           dueDate: formData.dueDate,
           category: formData.category,
-          description: formData.description,
+          description: formData.description.trim(),
           isPaid: false,
         });
+        console.log('Variable debt added successfully');
       }
       
+      // Reset form and close modal
       setFormData({
         name: '',
         amount: '',
@@ -79,6 +118,7 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
         category: '',
         description: '',
       });
+      console.log('Form reset and modal closing');
       onClose();
     } catch (error) {
       console.error('Error adding debt:', error);
@@ -86,6 +126,7 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
   };
 
   const handleChange = (field: string, value: string) => {
+    console.log(`Updating field ${field} with value:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -110,7 +151,7 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name" className="text-slate-300">Nome da Dívida</Label>
+            <Label htmlFor="name" className="text-slate-300">Nome da Dívida *</Label>
             <Input
               id="name"
               value={formData.name}
@@ -122,14 +163,15 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
           </div>
 
           <div>
-            <Label htmlFor="amount" className="text-slate-300">Valor</Label>
+            <Label htmlFor="amount" className="text-slate-300">Valor *</Label>
             <Input
               id="amount"
               type="number"
               step="0.01"
+              min="0.01"
               value={formData.amount}
               onChange={(e) => handleChange('amount', e.target.value)}
-              placeholder="0,00"
+              placeholder="0.00"
               className="mt-1 bg-slate-800 border-slate-600 text-white"
               required
             />
@@ -137,7 +179,7 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
 
           <div>
             <Label htmlFor="dueDate" className="text-slate-300">
-              {type === 'fixed' ? 'Dia do Vencimento (1-31)' : 'Data de Vencimento'}
+              {type === 'fixed' ? 'Dia do Vencimento (1-31) *' : 'Data de Vencimento *'}
             </Label>
             {type === 'fixed' ? (
               <Input
@@ -164,8 +206,8 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ open, onClose, type 
           </div>
 
           <div>
-            <Label htmlFor="category" className="text-slate-300">Categoria</Label>
-            <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
+            <Label htmlFor="category" className="text-slate-300">Categoria *</Label>
+            <Select value={formData.category} onValueChange={(value) => handleChange('category', value)} required>
               <SelectTrigger className="mt-1 bg-slate-800 border-slate-600 text-white">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>

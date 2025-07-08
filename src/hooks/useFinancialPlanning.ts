@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 
 export interface FixedDebt {
@@ -49,8 +48,10 @@ export const useFinancialPlanning = () => {
   useEffect(() => {
     try {
       const savedData = localStorage.getItem(`${STORAGE_KEY}-admin`);
+      console.log('Loading saved data:', savedData);
       if (savedData) {
         const parsedData = JSON.parse(savedData);
+        console.log('Parsed data:', parsedData);
         setData(parsedData);
       }
     } catch (err) {
@@ -62,7 +63,9 @@ export const useFinancialPlanning = () => {
   // Save data to localStorage
   const saveData = useCallback((newData: FinancialData) => {
     try {
+      console.log('Saving data to localStorage:', newData);
       localStorage.setItem(`${STORAGE_KEY}-admin`, JSON.stringify(newData));
+      console.log('Data saved successfully');
     } catch (err) {
       console.error('Error saving financial data:', err);
       setError('Erro ao salvar dados');
@@ -85,11 +88,14 @@ export const useFinancialPlanning = () => {
     
     const availableBalance = cashBalance - totalFixedDebts - totalVariableDebts;
 
+    console.log('Calculated totals:', { totalFixedDebts, totalVariableDebts, availableBalance });
+
     return { totalFixedDebts, totalVariableDebts, availableBalance };
   }, []);
 
   // Update cash balance
   const updateCashBalance = useCallback(async (amount: number) => {
+    console.log('Updating cash balance to:', amount);
     setLoading(true);
     try {
       const totals = calculateTotals(amount, data.fixedDebts, data.variableDebts);
@@ -98,9 +104,11 @@ export const useFinancialPlanning = () => {
         cashBalance: amount,
         ...totals,
       };
+      console.log('New data after cash balance update:', newData);
       setData(newData);
       saveData(newData);
     } catch (err) {
+      console.error('Error updating cash balance:', err);
       setError('Erro ao atualizar saldo');
     } finally {
       setLoading(false);
@@ -109,13 +117,18 @@ export const useFinancialPlanning = () => {
 
   // Add fixed debt
   const addFixedDebt = useCallback(async (debt: Omit<FixedDebt, 'id'>) => {
+    console.log('Adding fixed debt:', debt);
     setLoading(true);
     try {
       const newDebt: FixedDebt = {
         ...debt,
         id: Date.now().toString(),
       };
+      console.log('New fixed debt created:', newDebt);
+      
       const newFixedDebts = [...data.fixedDebts, newDebt];
+      console.log('Updated fixed debts array:', newFixedDebts);
+      
       const totals = calculateTotals(data.cashBalance, newFixedDebts, data.variableDebts);
       
       const newData = {
@@ -123,9 +136,13 @@ export const useFinancialPlanning = () => {
         fixedDebts: newFixedDebts,
         ...totals,
       };
+      console.log('Final data after adding fixed debt:', newData);
+      
       setData(newData);
       saveData(newData);
+      console.log('Fixed debt added successfully');
     } catch (err) {
+      console.error('Error adding fixed debt:', err);
       setError('Erro ao adicionar dívida fixa');
     } finally {
       setLoading(false);
@@ -134,13 +151,18 @@ export const useFinancialPlanning = () => {
 
   // Add variable debt
   const addVariableDebt = useCallback(async (debt: Omit<VariableDebt, 'id'>) => {
+    console.log('Adding variable debt:', debt);
     setLoading(true);
     try {
       const newDebt: VariableDebt = {
         ...debt,
         id: Date.now().toString(),
       };
+      console.log('New variable debt created:', newDebt);
+      
       const newVariableDebts = [...data.variableDebts, newDebt];
+      console.log('Updated variable debts array:', newVariableDebts);
+      
       const totals = calculateTotals(data.cashBalance, data.fixedDebts, newVariableDebts);
       
       const newData = {
@@ -148,9 +170,13 @@ export const useFinancialPlanning = () => {
         variableDebts: newVariableDebts,
         ...totals,
       };
+      console.log('Final data after adding variable debt:', newData);
+      
       setData(newData);
       saveData(newData);
+      console.log('Variable debt added successfully');
     } catch (err) {
+      console.error('Error adding variable debt:', err);
       setError('Erro ao adicionar dívida');
     } finally {
       setLoading(false);
